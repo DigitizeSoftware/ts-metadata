@@ -10,5 +10,8 @@
   "license": "ISC",
   "devDependencies": {
     "typescript": "^3.2.2"
+  },
+  "dependencies": {
+    "ts-custom-error": "^2.2.2"
   }
 }
