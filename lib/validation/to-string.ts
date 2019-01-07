@@ -5,10 +5,13 @@ export function toString(value: any) {
     switch (type) {
         case "object":
             if (value === null) {
-                return null;
+                return "null";
             }
             else if (isDate(value)) {
                 return "Date";
+            }
+            else if (Array.isArray(value)) {
+                return "Array";
             }
             else {
                 return type;
