@@ -12,7 +12,7 @@ export class RequiredTypeShape<T extends RequiredSubType> {
 
 export const RequiredType = <T extends RequiredSubType>(type: T): RequiredTypeShape<T> => new RequiredTypeShape(type);
 
-export function isRequiredType(type: any) {
+export function isRequiredType(type: any): type is RequiredTypeShape<any> {
     if (typeof type !== "object" || type == null) {
         return false;
     }

@@ -9,12 +9,12 @@ export class ArrayTypeShape<T extends ArraySubType> {
 
 export const ArrayType = <T extends ArraySubType>(type: T) => new ArrayTypeShape(type);
 
-export function isArrayType<T>(type: T): T extends ArrayTypeShape<any> ? true : false {
+export function isArrayType(type: any): type is ArrayTypeShape<any> {
     if (typeof type !== "object" || type == null) {
-        return false as any;
+        return false;
     }
     const subtype = (type as any).$$array;
-    return (isSimpleType(subtype) || isArrayType(subtype) || typeof subtype === "object" && subtype != null) as any;
+    return isSimpleType(subtype) || isArrayType(subtype) || typeof subtype === "object" && subtype != null;
 }
 
 export const extractArraySubtype = <T extends ArraySubType>(type: ArrayTypeShape<T>): T => type.$$array;

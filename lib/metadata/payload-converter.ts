@@ -1,12 +1,12 @@
-import {Shape, SimpleTypeShape, TypeFromShape} from "./types";
-import {mapValues} from "../hashmap/map-values";
-import {DateType, JsonDateType} from "./simple-type-constants";
-import {extractTypeFromRequired, isRequiredType, RequiredType, RequiredTypeShape} from "./required-type";
-import {parseJsonDate} from "./json-date";
 import {ArraySubType, ArrayType, ArrayTypeShape, extractArraySubtype, isArrayType} from "./array-type";
-import {isSimpleType} from "./simple-type";
-import {payloadArrayValidator, payloadValidator} from "./payload-validator";
+import {DateType, JsonDateType} from "./simple-type-constants";
+import {Shape, SimpleTypeShape, TypeFromShape} from "./types";
 import {ValidationError} from "../errors/validation-error";
+import {extractTypeFromRequired, isRequiredType, RequiredType, RequiredTypeShape} from "./required-type";
+import {isSimpleType} from "./simple-type";
+import {mapValues} from "../hashmap/map-values";
+import {parseJsonDate} from "./json-date";
+import {payloadArrayValidator, payloadValidator} from "./payload-validator";
 
 type PayloadSimpleType<T extends SimpleTypeShape> =
     T extends typeof DateType ? typeof JsonDateType :
@@ -66,15 +66,7 @@ export function parsePayload<T>(payload: any, recordShape: Shape<T>): TypeFromSh
         throw new ValidationError(validationResult);
     }
 
-    return mapValues(recordShape, (typeShape, key) => {
-        const value = payload[key];
-        if (typeShape === DateType || isRequiredType(typeShape) && extractTypeFromRequired(typeShape as any) === DateType) {
-            return parseJsonDate(value);
-        }
-        else {
-            return value;
-        }
-    });
+    return parseShape(payload, recordShape);
 }
 
 export function parseArrayPayload<T>(payload: any, recordShape: Shape<T>): Array<TypeFromShape<T>> {
@@ -83,5 +75,39 @@ export function parseArrayPayload<T>(payload: any, recordShape: Shape<T>): Array
         throw new ValidationError(validationResult);
     }
 
-    return (payload as Array<T>).map(item => parsePayload(item, recordShape));
+    return (payload as Array<T>).map(item => parseShape(item, recordShape));
+}
+
+function parseShape<T>(payload: any, typeShape: Shape<T>) {
+    return mapValues(typeShape, (keyShape, key) => parseValueType(payload[key], keyShape))
+}
+
+function parseValueType<T>(value: any, typeShape: SimpleTypeShape | RequiredTypeShape<any> | ArrayTypeShape<any> | Shape<T>): any {
+    if (isRequiredType(typeShape)) {
+        typeShape = extractTypeFromRequired(typeShape);
+    }
+    if (isSimpleType(typeShape)) {
+        return parseSimpleValue(value, typeShape);
+    }
+    else if (isArrayType(typeShape)) {
+        if (Array.isArray(value)) {
+            const arraySubtype = extractArraySubtype(typeShape);
+            return value.map(item => parseValueType(item, arraySubtype));
+        }
+        else {
+            return value;
+        }
+    }
+    else if (typeof typeShape === "object" && typeShape != null) {
+        return parseShape(value, typeShape as Shape<T>);
+    }
+    else {
+        return value;
+    }
+}
+
+function parseSimpleValue(value: any, type: SimpleTypeShape) {
+    return type === DateType
+        ? parseJsonDate(value)
+        : value;
 }
